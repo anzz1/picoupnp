@@ -1,7 +1,7 @@
 // picoupnp.h
 
 /*
-* picoupnp v1.00
+* picoupnp v1.01
 * https://github.com/anzz1/picoupnp
 */
 
@@ -21,17 +21,17 @@
 //
 // FUNCTIONS
 //
-// void AddPortMapping(unsigned short port, unsigned long protocol);
-// void AddPortRangeMapping(unsigned short start_port, unsigned short end_port, unsigned long protocol);
+// void AddPortMapping(unsigned short port, unsigned int protocol);
+// void AddPortRangeMapping(unsigned short start_port, unsigned short end_port, unsigned int protocol);
 //
-// void DeletePortMapping(unsigned short port, unsigned long protocol);
-// void DeletePortRangeMapping(unsigned short start_port, unsigned short end_port, unsigned long protocol);
+// void DeletePortMapping(unsigned short port, unsigned int protocol);
+// void DeletePortRangeMapping(unsigned short start_port, unsigned short end_port, unsigned int protocol);
 //
 //   - Port must be 1-65535
 //   - Protocol must be either IPPROTO_TCP or IPPROTO_UDP
 //
-// unsigned long GetLocalIP();
-// unsigned long GetDefaultGatewayIP();
+// unsigned int GetLocalIP();
+// unsigned int GetDefaultGatewayIP();
 //
 // int HTTPGetXMLRequest(char* hostname, const char* port, char* url, char* response, int maxlen);
 //   - text only
@@ -42,7 +42,7 @@
 //
 // int GetURLParts(char* url, char* host, char* port, char* path)
 //   - breaks URL to HOST, PORT, PATH elements
-// int GetIPString(unsigned long ip_in, char ip_out[16])
+// int GetIPString(unsigned int ip_in, char ip_out[16])
 //   - long ipv4 to string
 //
 // (PICOUPNP_ASYNC is defined)
@@ -50,7 +50,7 @@
 //   - asynchronous (threaded) versions of port mapping functions. creates a thread for the request and continues execution immediately.
 //
 // (PICOUPNP_EXTIP_HOST is defined)
-// unsigned long GetExternalIP();
+// unsigned int GetExternalIP();
 //
 // If for some reason it is desired, there is also separate UPNP_* / NATPMP_* / NATPCP_* functions to
 // add or delete port mappings. The default functions without the prefix try all three for maximum
@@ -143,7 +143,7 @@ namespace picoupnp
 #endif
 
 #ifdef _WIN32
-  const unsigned long piu_timeout = 2000;
+  const unsigned int piu_timeout = 2000;
 #else
   struct timeval piu_timeout = { 2, 0 };
 #endif
@@ -451,7 +451,7 @@ static int UPNP_ParseEndPoint(const char* xml /* in */, char* endpoint /* out[25
   return 0;
 }
 
-static int UPNP_GetRootDescXmlUrl(unsigned long localip, char* response, int maxlen)
+static int UPNP_GetRootDescXmlUrl(unsigned int localip, char* response, int maxlen)
 {
   int sd;
   struct sockaddr_in server, client;
@@ -513,7 +513,7 @@ static int UPNP_GetRootDescXmlUrl(unsigned long localip, char* response, int max
   return i;
 }
 
-int GetIPString(unsigned long ip_in, char* ip_out /* [16] */)
+int GetIPString(unsigned int ip_in, char* ip_out /* [16] */)
 {
   char* str = inet_ntoa(*(struct in_addr*)&ip_in);
   if (str) {
@@ -542,7 +542,7 @@ int WSAInit(void)
   return 0;
 }
 
-unsigned long GetDefaultGatewayIP(void)
+unsigned int GetDefaultGatewayIP(void)
 {
   MIB_IPFORWARDROW ip_forward;
   PIU_MEMZERO(&ip_forward, sizeof(ip_forward));
@@ -629,7 +629,7 @@ static int ParseNetlinkRoutes(struct nlmsghdr *nlHdr, struct route_info *rtInfo)
   return 0;
 }
 
-unsigned long GetDefaultGatewayIP(void)
+unsigned int GetDefaultGatewayIP(void)
 {
   struct nlmsghdr *nlMsg;
   struct rtmsg *rtMsg;
@@ -677,11 +677,11 @@ unsigned long GetDefaultGatewayIP(void)
 }
 #endif
 
-unsigned long GetLocalIP(void)
+unsigned int GetLocalIP(void)
 {
   char hostname[256];
   struct addrinfo hints, *info;
-  unsigned long addr;
+  unsigned int addr;
 
 #ifdef _WIN32
   if (WSAInit()) return 0;
@@ -725,13 +725,13 @@ unsigned long GetLocalIP(void)
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_protocol = IPPROTO_TCP;
   if (getaddrinfo(hostname, NULL, &hints, &info)) return 0;
-  addr = *(unsigned long*)&info->ai_addr->sa_data[2];
+  addr = *(unsigned int*)&info->ai_addr->sa_data[2];
   freeaddrinfo(info);
   return addr;
 }
 
 #ifdef PICOUPNP_EXTIP_HOST
-unsigned long GetExternalIP(void)
+unsigned int GetExternalIP(void)
 {
 #ifdef _WIN32
   if (WSAInit()) return 0;
@@ -758,13 +758,13 @@ struct natpmp_request {
   unsigned short reserved;
   unsigned short internal_port;
   unsigned short external_port;
-  unsigned long lifetime;
+  unsigned int lifetime;
 };
 
-static void NATPMP_PortMapping(unsigned short port, unsigned long protocol, unsigned int delete)
+static void NATPMP_PortMapping(unsigned short port, unsigned int protocol, unsigned int delete)
 {
   int sd;
-  unsigned long gatewayip, addrlen;
+  unsigned int gatewayip, addrlen;
   struct natpmp_request req;
   struct sockaddr_in server;
 
@@ -798,12 +798,12 @@ static void NATPMP_PortMapping(unsigned short port, unsigned long protocol, unsi
   closesocket(sd);
 }
 
-void NATPMP_AddPortMapping(unsigned short port, unsigned long protocol)
+void NATPMP_AddPortMapping(unsigned short port, unsigned int protocol)
 {
   NATPMP_PortMapping(port, protocol, 0);
 }
 
-void NATPMP_DeletePortMapping(unsigned short port, unsigned long protocol)
+void NATPMP_DeletePortMapping(unsigned short port, unsigned int protocol)
 {
   NATPMP_PortMapping(port, protocol, 1);
 }
@@ -815,13 +815,13 @@ struct natpcp_map_request {
   unsigned char version;
   unsigned char opcode;
   unsigned short reserved1;
-  unsigned long lifetime;
+  unsigned int lifetime;
   unsigned char internal_ip6_zeros[10];
   unsigned short internal_ip6_ones;
-  unsigned long internal_ip4;
-  unsigned long nonce1;
-  unsigned long nonce2;
-  unsigned long nonce3;
+  unsigned int internal_ip4;
+  unsigned int nonce1;
+  unsigned int nonce2;
+  unsigned int nonce3;
   unsigned char protocol;
   unsigned char reserved2;
   unsigned short reserved3;
@@ -829,22 +829,22 @@ struct natpcp_map_request {
   unsigned short external_port;
   unsigned char external_ip6_zeros[10];
   unsigned short external_ip6_ones;
-  unsigned long external_ip4;
+  unsigned int external_ip4;
 };
 
-static void NATPCP_PortMapping(unsigned short port, unsigned long protocol, unsigned long localip, unsigned int delete)
+static void NATPCP_PortMapping(unsigned short port, unsigned int protocol, unsigned int localip, unsigned int delete)
 {
   int sd;
-  unsigned long gatewayip, addrlen;
+  unsigned int gatewayip, addrlen;
   struct natpcp_map_request req;
   struct sockaddr_in server;
-  static unsigned long nonce1 = 0, nonce2 = 0, nonce3 = 0;
+  static unsigned int nonce1 = 0, nonce2 = 0, nonce3 = 0;
 
   if (!nonce1 && !nonce2 && !nonce3) {
     unsigned long long tsc = __rdtsc();
-    nonce1 = ((unsigned long *)&tsc)[0] ^ 0x11223344;
-    nonce2 = ((unsigned long *)&tsc)[1] ^ 0x55667788;
-    nonce3 = ((unsigned long *)&tsc)[0] ^ ((unsigned long *)&tsc)[1] ^ 0x11551155;
+    nonce1 = ((unsigned int *)&tsc)[0] ^ 0x11223344;
+    nonce2 = ((unsigned int *)&tsc)[1] ^ 0x55667788;
+    nonce3 = ((unsigned int *)&tsc)[0] ^ ((unsigned int *)&tsc)[1] ^ 0x11551155;
   }
 
 #ifdef _WIN32
@@ -889,28 +889,28 @@ static void NATPCP_PortMapping(unsigned short port, unsigned long protocol, unsi
   closesocket(sd);
 }
 
-void NATPCP_AddPortMapping(unsigned short port, unsigned long protocol)
+void NATPCP_AddPortMapping(unsigned short port, unsigned int protocol)
 {
-  unsigned long localip = GetLocalIP();
+  unsigned int localip = GetLocalIP();
   if (!localip)
     return;
   NATPCP_PortMapping(port, protocol, localip, 0);
 }
 
-void NATPCP_DeletePortMapping(unsigned short port, unsigned long protocol)
+void NATPCP_DeletePortMapping(unsigned short port, unsigned int protocol)
 {
-  unsigned long localip = GetLocalIP();
+  unsigned int localip = GetLocalIP();
   if (!localip)
     return;
   NATPCP_PortMapping(port, protocol, localip, 1);
 }
 
-int UPNP_AddPortMapping(unsigned short port, unsigned long protocol)
+int UPNP_AddPortMapping(unsigned short port, unsigned int protocol)
 {
   char xml[768], slocalip[16], url[256], host[256], hport[6], sport[6];
   char *response, *p;
   unsigned int i = 0;
-  unsigned long localip;
+  unsigned int localip;
 
 #ifdef _WIN32
   if (WSAInit()) return 0;
@@ -961,12 +961,12 @@ int UPNP_AddPortMapping(unsigned short port, unsigned long protocol)
   return i;
 }
 
-int UPNP_DeletePortMapping(unsigned short port, unsigned long protocol)
+int UPNP_DeletePortMapping(unsigned short port, unsigned int protocol)
 {
   char xml[768], slocalip[16], url[256], host[256], hport[6], sport[6];
   char *response, *p;
   unsigned int i = 0;
-  unsigned long localip;
+  unsigned int localip;
 
 #ifdef _WIN32
   if (WSAInit()) return 0;
@@ -1009,28 +1009,28 @@ int UPNP_DeletePortMapping(unsigned short port, unsigned long protocol)
   return i;
 }
 
-void AddPortMapping(unsigned short port, unsigned long protocol)
+void AddPortMapping(unsigned short port, unsigned int protocol)
 {
   NATPMP_AddPortMapping(port, protocol);
   NATPCP_AddPortMapping(port, protocol);
   UPNP_AddPortMapping(port, protocol);
 }
 
-void DeletePortMapping(unsigned short port, unsigned long protocol)
+void DeletePortMapping(unsigned short port, unsigned int protocol)
 {
   NATPMP_DeletePortMapping(port, protocol);
   NATPCP_DeletePortMapping(port, protocol);
   UPNP_DeletePortMapping(port, protocol);
 }
 
-void AddPortRangeMapping(unsigned short start_port, unsigned short end_port, unsigned long protocol)
+void AddPortRangeMapping(unsigned short start_port, unsigned short end_port, unsigned int protocol)
 {
   for (unsigned short port = start_port; port <= end_port; port++) {
     AddPortMapping(port, protocol);
   }
 }
 
-void DeletePortRangeMapping(unsigned short start_port, unsigned short end_port, unsigned long protocol)
+void DeletePortRangeMapping(unsigned short start_port, unsigned short end_port, unsigned int protocol)
 {
   for (unsigned short port = start_port; port <= end_port; port++) {
     DeletePortMapping(port, protocol);
@@ -1040,22 +1040,22 @@ void DeletePortRangeMapping(unsigned short start_port, unsigned short end_port, 
 #ifdef PICOUPNP_ASYNC
 #ifdef _WIN32
 
-static unsigned long __stdcall portMapThread(void* param)
+static unsigned int __stdcall portMapThread(void* param)
 {
-  if ((unsigned long)param & 1) {
-    DeletePortMapping((unsigned long)param >> 1, (unsigned long)param >> 17);
+  if ((unsigned int)param & 1) {
+    DeletePortMapping((unsigned int)param >> 1, (unsigned int)param >> 17);
   }
   else {
-    AddPortMapping((unsigned long)param >> 1, (unsigned long)param >> 17);
+    AddPortMapping((unsigned int)param >> 1, (unsigned int)param >> 17);
   }
   return 0;
 }
 
-void AddPortMappingAsync(unsigned short port, unsigned long protocol)
+void AddPortMappingAsync(unsigned short port, unsigned int protocol)
 {
   CloseHandle(CreateThread(0, 0, portMapThread, (void*)((protocol << 17) | (port << 1) | 0), 0, 0));
 }
-void DeletePortMappingAsync(unsigned short port, unsigned long protocol)
+void DeletePortMappingAsync(unsigned short port, unsigned int protocol)
 {
   CloseHandle(CreateThread(0, 0, portMapThread, (void*)((protocol << 17) | (port << 1) | 1), 0, 0));
 }
@@ -1064,16 +1064,16 @@ void DeletePortMappingAsync(unsigned short port, unsigned long protocol)
 
 static void* __cdecl portMapThread(void* param)
 {
-  if ((unsigned long)param & 1) {
-    DeletePortMapping((unsigned long)param >> 1, (unsigned long)param >> 17);
+  if ((unsigned int)param & 1) {
+    DeletePortMapping((unsigned int)param >> 1, (unsigned int)param >> 17);
   }
   else {
-    AddPortMapping((unsigned long)param >> 1, (unsigned long)param >> 17);
+    AddPortMapping((unsigned int)param >> 1, (unsigned int)param >> 17);
   }
   return 0;
 }
 
-void AddPortMappingAsync(unsigned short port, unsigned long protocol)
+void AddPortMappingAsync(unsigned short port, unsigned int protocol)
 {
   pthread_t thread;
   pthread_attr_t attr;
@@ -1082,7 +1082,7 @@ void AddPortMappingAsync(unsigned short port, unsigned long protocol)
   pthread_create(&thread, &attr, &portMapThread, (void*)((protocol << 17) | (port << 1) | 0));
   pthread_attr_destroy(&attr);
 }
-void DeletePortMappingAsync(unsigned short port, unsigned long protocol)
+void DeletePortMappingAsync(unsigned short port, unsigned int protocol)
 {
   pthread_t thread;
   pthread_attr_t attr;
@@ -1093,13 +1093,13 @@ void DeletePortMappingAsync(unsigned short port, unsigned long protocol)
 }
 #endif // (_WIN32 || !_WIN32)
 
-void AddPortRangeMappingAsync(unsigned short start_port, unsigned short end_port, unsigned long protocol)
+void AddPortRangeMappingAsync(unsigned short start_port, unsigned short end_port, unsigned int protocol)
 {
   for (unsigned short port = start_port; port <= end_port; port++) {
     AddPortMappingAsync(port, protocol);
   }
 }
-void DeletePortRangeMappingAsync(unsigned short start_port, unsigned short end_port, unsigned long protocol)
+void DeletePortRangeMappingAsync(unsigned short start_port, unsigned short end_port, unsigned int protocol)
 {
   for (unsigned short port = start_port; port <= end_port; port++) {
     DeletePortMappingAsync(port, protocol);
