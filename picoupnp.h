@@ -1,7 +1,7 @@
 // picoupnp.h
 
 /*
-* picoupnp v1.01
+* picoupnp v1.02
 * https://github.com/anzz1/picoupnp
 */
 
@@ -280,6 +280,7 @@ int GetURLParts(char* url, char* host, char* port, char* path)
 int HTTPXMLRequest(char* hostname, const char* port, char* request, char* response, int maxlen)
 {
   int sd;
+  int rcv = 0, rcv0 = 0;
   struct addrinfo hints, *info;
   char *p;
 
@@ -308,11 +309,16 @@ int HTTPXMLRequest(char* hostname, const char* port, char* request, char* respon
     return 0;
   }
   PIU_MEMZERO(response, maxlen);
-  if (recv(sd, response, maxlen-1, 0) == -1) {
-    closesocket(sd);
-    freeaddrinfo(info);
-    return 0;
-  }
+  do {
+    rcv0 = recv(sd, response+rcv, maxlen-1-rcv, 0);
+    if (rcv0 < 0)
+    {
+      closesocket(sd);
+      freeaddrinfo(info);
+      return 0;
+    }
+    rcv += rcv0;
+  } while (rcv0 > 0 && rcv < maxlen-1);
   closesocket(sd);
   freeaddrinfo(info);
 
@@ -708,7 +714,7 @@ unsigned int GetLocalIP(void)
       if (pip_table) {
         for (unsigned int i = 0; i < pip_table->dwNumEntries; i++) {
           if (pip_table->table[i].dwIndex == ip_forward.dwForwardIfIndex) {
-            DWORD addr = pip_table->table[i].dwAddr;
+            addr = pip_table->table[i].dwAddr;
             PIU_FREE(pip_table);
             return addr;
           }
